@@ -1,7 +1,7 @@
 import {PageHeader} from "@/components/ui/PageHeader";
 import {Photo} from "@/components/ui/Photo";
 import {Section} from "@/components/ui/Section";
-import {getAll} from "@/lib/sheets";
+import {getAllPublic} from "@/lib/sheets"; // ← diubah dari getAll
 
 export const metadata = {title: "Galeri"};
 
@@ -9,7 +9,7 @@ export const metadata = {title: "Galeri"};
 export const revalidate = 60;
 
 export default async function GaleriPage() {
-  const photos = (await getAll("gallery"))
+  const photos = (await getAllPublic("gallery")) // ← diubah dari getAll
     .filter((g) => g.gambar)
     .sort(
       (a, b) =>

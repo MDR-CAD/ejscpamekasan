@@ -1,7 +1,7 @@
-import { cache } from "react";
-import { randomUUID } from "node:crypto";
-import { sheetsClient, spreadsheetId } from "./google";
-import { TABLES, type RowOf, type TableName } from "./schema";
+import {cache} from "react";
+import {randomUUID} from "node:crypto";
+import {sheetsClient, spreadsheetId} from "./google";
+import {TABLES, type RowOf, type TableName} from "./schema";
 
 function colLetter(n: number): string {
   let s = "";
@@ -21,18 +21,21 @@ async function withRetry<T>(fn: () => Promise<T>, tries = 3): Promise<T> {
     try {
       return await fn();
     } catch (err) {
-      const code = (err as { code?: number | string }).code;
-      const retryable = code === 429 || (typeof code === "number" && code >= 500);
+      const code = (err as {code?: number | string}).code;
+      const retryable =
+        code === 429 || (typeof code === "number" && code >= 500);
       if (!retryable || attempt >= tries) throw err;
       await new Promise((r) => setTimeout(r, 500 * 2 ** attempt));
     }
   }
 }
 
-type StoredRow<T extends TableName> = { data: RowOf<T>; rowNumber: number };
+type StoredRow<T extends TableName> = {data: RowOf<T>; rowNumber: number};
 
 /** Baca semua baris (tanpa cache) beserta nomor barisnya di sheet. */
-async function readRows<T extends TableName>(table: T): Promise<StoredRow<T>[]> {
+async function readRows<T extends TableName>(
+  table: T,
+): Promise<StoredRow<T>[]> {
   const cols = TABLES[table] as readonly string[];
   let values: unknown[][];
   try {
@@ -46,16 +49,20 @@ async function readRows<T extends TableName>(table: T): Promise<StoredRow<T>[]> 
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     if (/Unable to parse range/i.test(message)) {
-      throw new Error(`Tab "${table}" tidak ditemukan di spreadsheet. Jalankan: npm run setup-sheets`);
+      throw new Error(
+        `Tab "${table}" tidak ditemukan di spreadsheet. Jalankan: npm run setup-sheets`,
+      );
     }
     throw err;
   }
 
   const out: StoredRow<T>[] = [];
   values.forEach((row, i) => {
-    const data = Object.fromEntries(cols.map((c, j) => [c, String(row[j] ?? "")])) as RowOf<T>;
+    const data = Object.fromEntries(
+      cols.map((c, j) => [c, String(row[j] ?? "")]),
+    ) as RowOf<T>;
     // Lewati baris kosong; nomor baris tetap dihitung dari posisi aslinya.
-    if ((data as Record<string, string>).id) out.push({ data, rowNumber: i + 2 });
+    if ((data as Record<string, string>).id) out.push({data, rowNumber: i + 2});
   });
   return out;
 }
@@ -64,18 +71,55 @@ async function readRows<T extends TableName>(table: T): Promise<StoredRow<T>[]> 
  * Ambil semua baris sebuah tab. Dibungkus React cache(): dalam satu request
  * yang sama, tab yang sama hanya dibaca sekali dari Google Sheets.
  */
-export const getAll = cache(async <T extends TableName>(table: T): Promise<RowOf<T>[]> => {
-  return (await readRows(table)).map((r) => r.data);
-});
+export const getAll = cache(
+  async <T extends TableName>(table: T): Promise<RowOf<T>[]> => {
+    return (await readRows(table)).map((r) => r.data);
+  },
+);
 
-export async function getById<T extends TableName>(table: T, id: string): Promise<RowOf<T> | null> {
+// ➕ BARU (1/2) — Cek apakah Google Sheets sudah disambungkan.
+// Tiga nilai ini diisi di .env.local (di komputer) atau di Environment Variables (di Vercel).
+/** True jika tiga pengaturan Google Sheets sudah diisi (di .env.local atau di Vercel). */
+export function sheetsConfigured(): boolean {
+  return Boolean(
+    process.env.SPREADSHEET_ID &&
+    process.env.GOOGLE_CLIENT_EMAIL &&
+    process.env.GOOGLE_PRIVATE_KEY,
+  );
+}
+
+// ➕ BARU (2/2) — Versi getAll khusus HALAMAN PUBLIK (Beranda, Berita, Opini, Galeri).
+// Gunanya: kalau Anda deploy ke Vercel sebelum Google Sheets disambungkan, situs tetap tampil
+// (berita/galeri/kegiatan kosong) dan tidak gagal saat build.
+// Halaman ADMIN tetap memakai getAll biasa, supaya error tampil jelas dan tidak tersembunyi.
+/**
+ * Untuk halaman publik: jika Google Sheets BELUM disambungkan (mis. deploy awal hanya untuk
+ * melihat tampilan), kembalikan daftar kosong supaya situs tetap tampil. Kalau sudah disambungkan
+ * lalu terjadi error sungguhan (kuota, tab hilang, dll.), error tetap dilempar agar tidak tersembunyi.
+ */
+export async function getAllPublic<T extends TableName>(
+  table: T,
+): Promise<RowOf<T>[]> {
+  if (!sheetsConfigured()) return [];
+  return getAll(table);
+}
+
+export async function getById<T extends TableName>(
+  table: T,
+  id: string,
+): Promise<RowOf<T> | null> {
   const rows = await getAll(table);
   return rows.find((r) => (r as Record<string, string>).id === id) ?? null;
 }
 
-type Writable<T extends TableName> = Partial<Omit<RowOf<T>, "id" | "created_at" | "updated_at">>;
+type Writable<T extends TableName> = Partial<
+  Omit<RowOf<T>, "id" | "created_at" | "updated_at">
+>;
 
-export async function create<T extends TableName>(table: T, data: Writable<T>): Promise<RowOf<T>> {
+export async function create<T extends TableName>(
+  table: T,
+  data: Writable<T>,
+): Promise<RowOf<T>> {
   const cols = TABLES[table] as readonly string[];
   const now = new Date().toISOString();
   const row: Record<string, string> = {
@@ -92,7 +136,7 @@ export async function create<T extends TableName>(table: T, data: Writable<T>): 
       // RAW = nilai disimpan apa adanya sebagai teks (tidak ada interpretasi rumus "=...").
       valueInputOption: "RAW",
       insertDataOption: "INSERT_ROWS",
-      requestBody: { values: [cols.map((c) => row[c] ?? "")] },
+      requestBody: {values: [cols.map((c) => row[c] ?? "")]},
     }),
   );
   return row as unknown as RowOf<T>;
@@ -104,7 +148,9 @@ export async function update<T extends TableName>(
   patch: Writable<T>,
 ): Promise<RowOf<T>> {
   const cols = TABLES[table] as readonly string[];
-  const found = (await readRows(table)).find((r) => (r.data as Record<string, string>).id === id);
+  const found = (await readRows(table)).find(
+    (r) => (r.data as Record<string, string>).id === id,
+  );
   if (!found) throw new Error("Data tidak ditemukan.");
 
   const next: Record<string, string> = {
@@ -119,7 +165,7 @@ export async function update<T extends TableName>(
       spreadsheetId: spreadsheetId(),
       range: `${table}!A${found.rowNumber}:${lastCol(table)}${found.rowNumber}`,
       valueInputOption: "RAW",
-      requestBody: { values: [cols.map((c) => next[c] ?? "")] },
+      requestBody: {values: [cols.map((c) => next[c] ?? "")]},
     }),
   );
   return next as unknown as RowOf<T>;
@@ -134,12 +180,15 @@ async function sheetIdOf(table: TableName): Promise<number> {
   );
   const found = res.data.sheets?.find((s) => s.properties?.title === table);
   const sheetId = found?.properties?.sheetId;
-  if (sheetId == null) throw new Error(`Tab "${table}" tidak ditemukan di spreadsheet.`);
+  if (sheetId == null)
+    throw new Error(`Tab "${table}" tidak ditemukan di spreadsheet.`);
   return sheetId;
 }
 
 export async function remove(table: TableName, id: string): Promise<void> {
-  const found = (await readRows(table)).find((r) => (r.data as Record<string, string>).id === id);
+  const found = (await readRows(table)).find(
+    (r) => (r.data as Record<string, string>).id === id,
+  );
   if (!found) return; // sudah terhapus
   const sheetId = await sheetIdOf(table);
 

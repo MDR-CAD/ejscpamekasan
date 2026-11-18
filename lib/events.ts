@@ -1,4 +1,4 @@
-import {getAll} from "./sheets";
+import {getAllPublic} from "./sheets"; // ← diubah dari getAll
 
 export type EventItem = {
   id: string;
@@ -16,7 +16,7 @@ export function todayWIB(): string {
 /** Kegiatan yang belum lewat, tanggal terdekat lebih dulu. Dibaca dari Google Sheets. */
 export async function upcomingEvents(limit = 3): Promise<EventItem[]> {
   const today = todayWIB();
-  return (await getAll("kegiatan"))
+  return (await getAllPublic("kegiatan")) // ← diubah dari getAll
     .filter((r) => r.tanggal >= today)
     .sort(
       (a, b) =>

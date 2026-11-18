@@ -1,6 +1,6 @@
 // Membaca berita & opini dari Google Sheets untuk ditampilkan di situs publik.
 // Hanya artikel berstatus "terbit" yang diambil; draft tidak pernah keluar dari sini.
-import {getAll} from "./sheets";
+import {getAllPublic} from "./sheets"; // ← diubah dari getAll
 import type {ArticleCategory, RowOf} from "./schema";
 
 export type Article = {
@@ -39,7 +39,7 @@ function toArticle(r: RowOf<"articles">): Article {
 export async function getArticles(
   category: ArticleCategory,
 ): Promise<Article[]> {
-  const rows = await getAll("articles");
+  const rows = await getAllPublic("articles"); // ← diubah dari getAll
   return rows
     .filter((r) => r.kategori === category && r.status === "terbit" && r.slug)
     .sort(
@@ -54,7 +54,7 @@ export async function findArticle(
   category: ArticleCategory,
   slug: string,
 ): Promise<Article | null> {
-  const rows = await getAll("articles");
+  const rows = await getAllPublic("articles"); // ← diubah dari getAll
   const row = rows.find(
     (r) => r.kategori === category && r.slug === slug && r.status === "terbit",
   );
