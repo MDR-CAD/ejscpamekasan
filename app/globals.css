@@ -1,0 +1,116 @@
+@import "tailwindcss";
+
+/* ✏️ WARNA SITUS: ubah deretan "brand" di bawah, seluruh situs (termasuk dashboard) ikut berubah.
+   Saat ini memakai teal. Untuk biru, ganti dengan deretan warna biru, dst. */
+@theme {
+  --color-brand-50: #f0fdfa;
+  --color-brand-100: #ccfbf1;
+  --color-brand-200: #99f6e4;
+  --color-brand-300: #5eead4;
+  --color-brand-400: #2dd4bf;
+  --color-brand-500: #14b8a6;
+  --color-brand-600: #0d9488;
+  --color-brand-700: #0f766e;
+  --color-brand-800: #115e59;
+  --color-brand-900: #134e4a;
+  --color-brand-950: #042f2e;
+}
+
+@theme inline {
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-slate-50 text-slate-700 antialiased;
+}
+
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--color-brand-600);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* ---------- Situs publik ---------- */
+  .container-page {
+    @apply mx-auto w-full max-w-6xl px-5 sm:px-8;
+  }
+
+  /* Label kecil di atas judul: garis pendek + teks teal */
+  .eyebrow {
+    @apply inline-flex items-center gap-2.5 text-xs font-semibold uppercase tracking-[0.16em] text-brand-600;
+  }
+  .eyebrow::before {
+    content: "";
+    @apply block h-px w-6 bg-current;
+  }
+  .eyebrow-on-dark {
+    @apply text-brand-300;
+  }
+
+  .btn-solid {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-800;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-brand-600 hover:text-brand-700;
+  }
+  .btn-light {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-brand-900 transition hover:bg-brand-50;
+  }
+
+  /* Kartu putih bergaris tipis, dipakai di banyak bagian */
+  .surface {
+    @apply rounded-2xl border border-slate-200 bg-white;
+  }
+
+  /* Pola kotak halus: versi untuk latar gelap dan latar terang */
+  .grid-pattern {
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+  .grid-pattern-light {
+    background-image:
+      linear-gradient(rgba(13, 148, 136, 0.09) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(13, 148, 136, 0.09) 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+
+  /* ---------- Dashboard & form ---------- */
+  .card {
+    @apply rounded-xl border border-slate-200 bg-white p-5 shadow-sm;
+  }
+  .label {
+    @apply mb-1 block text-sm font-medium text-slate-700;
+  }
+  .input {
+    @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-brand-600 focus:ring-2 focus:ring-brand-100;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .btn-primary {
+    @apply bg-brand-600 text-white hover:bg-brand-700;
+  }
+  .btn-secondary {
+    @apply border border-slate-300 bg-white text-slate-700 hover:bg-slate-50;
+  }
+  .btn-link {
+    @apply text-sm font-medium hover:underline;
+  }
+  .th {
+    @apply px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-500;
+  }
+  .td {
+    @apply px-4 py-3 text-sm;
+  }
+  .error-box {
+    @apply rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700;
+  }
+}
